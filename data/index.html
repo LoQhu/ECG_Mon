@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ECG Graph</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+</head>
+<body>
+    <canvas id="ecgChart" width="800" height="400"></canvas>
+
+    <script>
+        // Initialize WebSocket connection
+        const socket = new WebSocket('ws://http://192.168.0.176/:80'); // Replace with your ESP32 IP address and port
+
+        // Initialize Chart.js
+        const ctx = document.getElementById('ecgChart').getContext('2d');
+        const ecgChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'ECG',
+                    data: [],
+                    borderColor: 'blue',
+                    borderWidth: 1,
+                    fill: false
+                }]
+            },
+            options: {
+                animation: false,
+                scales: {
+                    x: {
+                        display: false
+                    },
+                    y: {
+                        suggestedMin: 0,
+                        suggestedMax: 1023
+                    }
+                }
+            }
+        });
+
+        // WebSocket event listeners
+        socket.addEventListener('open', function (event) {
+            console.log('Connected to ESP32');
+        });
+
+        socket.addEventListener('message', function (event) {
+            const data = JSON.parse(event.data);
+            const time = new Date().toISOString().slice(14, 19); // Time format: HH:MM:SS
+            ecgChart.data.labels.push(time);
+            ecgChart.data.datasets[0].data.push(data.value);
+            ecgChart.update();
+        });
+
+        socket.addEventListener('close', function (event) {
+            console.log('Connection closed');
+        });
+
+        socket.addEventListener('error', function (event) {
+            console.error('WebSocket error:', event);
+        });
+    </script>
+</body>
+</html>
